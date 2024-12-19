@@ -1,29 +1,42 @@
-import { Config } from './config';
 import { Client, GatewayIntentBits } from 'discord.js';
+import { Config } from './config';
 import { onInteraction } from './events/onInteraction';
 import { onReady } from './events/onReady';
-
 import { onMemberJoin } from './events/onMemberJoin';
 import { onMemberLeave } from './events/onMemberLeave';
 import { onSlashCommand } from './events/onSlashCommand';
 
-export const Bot = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildModeration,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-  ],
-});
+class Bot {
+  private client: Client;
 
-Bot.once('ready', async () => await onReady(Bot));
+  constructor() {
+    this.client = new Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildModeration,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers,
+      ],
+    });
 
-Bot.on('guildMemberAdd', async (member) => await onMemberJoin(member));
-Bot.on('guildMemberRemove', async (member) => await onMemberLeave(member));
-Bot.on('interactionCreate', async (interaction) => {
-  await onInteraction(interaction);
-  await onSlashCommand(interaction);
-});
+    this.setupEvents();
+  }
 
-Bot.login(Config.DISCORD_TOKEN);
+  private setupEvents() {
+    this.client.once('ready', async () => await onReady(this.client));
+    this.client.on('guildMemberAdd', async (member) => await onMemberJoin(member));
+    this.client.on('guildMemberRemove', async (member) => await onMemberLeave(member));
+    this.client.on('interactionCreate', async (interaction) => {
+      await onInteraction(interaction);
+      await onSlashCommand(interaction);
+    });
+  }
+
+  public start() {
+    this.client.login(Config.DISCORD_TOKEN);
+  }
+}
+
+const bot = new Bot();
+bot.start();
